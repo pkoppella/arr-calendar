@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Austin Ridge Riders – Event Calendar</title>
+<style>
+  :root {
+    --sunday: #1d4ed8;
+    --monthly: #0ea5e9;
+    --advanced: #111827;
+    --rlag: #dc2626;
+    --clinic: #0891b2;
+    --special: #d97706;
+    --trailcrew: #16a34a;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --arr-teal: #3d8fa8;
+    --arr-teal-dark: #2d6e84;
+    --header-bg: #2d6e84;
+    --today: #fef3c7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  header {
+    background: var(--header-bg);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 0; }
+  .arr-logo {
+    height: 64px;
+    width: auto;
+    flex-shrink: 0;
+    display: block;
+  }
+  .header-sub { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 3px; }
+  .btn-download-all {
+    background: white; color: var(--arr-teal-dark);
+    border: none; border-radius: 8px;
+    padding: 10px 18px; font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .btn-download-all:hover { background: #e0f2f7; color: var(--arr-teal-dark); }
+
+  .controls {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+  .filter-btn {
+    padding: 5px 12px; border-radius: 20px;
+    border: 2px solid transparent;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .filter-btn.active { color: white; }
+  .filter-btn[data-cat="all"] { background: #1e293b; color: white; border-color: #1e293b; }
+  .filter-btn[data-cat="sunday"] { border-color: var(--sunday); color: var(--sunday); }
+  .filter-btn[data-cat="sunday"].active { background: var(--sunday); color: white; }
+  .filter-btn[data-cat="monthly"] { border-color: var(--monthly); color: var(--monthly); }
+  .filter-btn[data-cat="monthly"].active { background: var(--monthly); color: white; }
+  .filter-btn[data-cat="advanced"] { border-color: var(--advanced); color: var(--advanced); }
+  .filter-btn[data-cat="advanced"].active { background: var(--advanced); color: white; }
+  .filter-btn[data-cat="rlag"] { border-color: var(--rlag); color: var(--rlag); }
+  .filter-btn[data-cat="rlag"].active { background: var(--rlag); color: white; }
+  .filter-btn[data-cat="clinic"] { border-color: var(--clinic); color: var(--clinic); }
+  .filter-btn[data-cat="clinic"].active { background: var(--clinic); color: white; }
+  .filter-btn[data-cat="special"] { border-color: var(--special); color: var(--special); }
+  .filter-btn[data-cat="special"].active { background: var(--special); color: white; }
+  .filter-btn[data-cat="trailcrew"] { border-color: var(--trailcrew); color: var(--trailcrew); }
+  .filter-btn[data-cat="trailcrew"].active { background: var(--trailcrew); color: white; }
+
+  .nav {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .nav button {
+    width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; font-size: 16px; display: flex;
+    align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .nav button:hover { background: var(--bg); }
+  .month-label { font-size: 18px; font-weight: 700; min-width: 180px; text-align: center; }
+
+  .calendar-wrap { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
+
+  .day-headers {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px; margin-bottom: 4px;
+  }
+  .day-header {
+    text-align: center; font-size: 12px; font-weight: 700;
+    color: var(--muted); padding: 6px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .calendar-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .day-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-height: 110px;
+    padding: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-cell.other-month { background: #f1f5f9; opacity: 0.6; }
+  .day-cell.today { background: var(--today); border-color: #fbbf24; }
+  .day-num {
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    margin-bottom: 4px; display: inline-block;
+    width: 24px; height: 24px; line-height: 24px;
+    text-align: center; border-radius: 50%;
+  }
+  .today .day-num {
+    background: #f59e0b; color: white;
+  }
+  .event-chip {
+    display: block;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px;
+    margin-bottom: 2px; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: white;
+    transition: opacity 0.15s;
+  }
+  .event-chip:hover { opacity: 0.85; }
+  .event-chip.cat-sunday { background: var(--sunday); }
+  .event-chip.cat-monthly { background: var(--monthly); }
+  .event-chip.cat-advanced { background: var(--advanced); }
+  .event-chip.cat-rlag { background: var(--rlag); }
+  .event-chip.cat-clinic { background: var(--clinic); }
+  .event-chip.cat-special { background: var(--special); }
+  .event-chip.cat-trailcrew { background: var(--trailcrew); }
+  .more-link {
+    font-size: 10px; color: var(--muted); cursor: pointer;
+    font-weight: 600; padding-left: 4px;
+  }
+  .more-link:hover { color: var(--text); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 16px;
+    max-width: 520px; width: 100%;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .modal-cat-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px; color: white;
+    margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .modal-title { font-size: 20px; font-weight: 700; line-height: 1.3; }
+  .modal-close {
+    background: none; border: none; font-size: 22px; cursor: pointer;
+    color: var(--muted); padding: 4px; line-height: 1; flex-shrink: 0; margin-left: 12px;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 20px 24px; }
+  .modal-row {
+    display: flex; gap: 10px; margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .modal-icon { font-size: 16px; flex-shrink: 0; width: 20px; }
+  .modal-label { color: var(--muted); font-weight: 600; min-width: 70px; }
+  .modal-val { color: var(--text); }
+  .modal-desc { font-size: 14px; color: var(--muted); line-height: 1.6; margin: 12px 0 20px; }
+  .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-ics {
+    background: #1e293b; color: white;
+    border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-ics:hover { background: #334155; }
+  .btn-register {
+    background: #22c55e; color: white;
+    border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .btn-register:hover { background: #16a34a; }
+
+  /* Day modal (multiple events) */
+  .day-event-list { list-style: none; }
+  .day-event-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .day-event-item:last-child { border-bottom: none; }
+  .day-event-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .day-event-info .title { font-size: 14px; font-weight: 600; }
+  .day-event-info .sub { font-size: 12px; color: var(--muted); }
+
+  footer {
+    text-align: center; padding: 28px 32px;
+    font-size: 12px; color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--muted); }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    padding: 0 32px 20px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  @media (max-width: 700px) {
+    header { padding: 14px 16px; }
+    .controls { padding: 12px 16px; }
+    .calendar-wrap { padding: 12px 8px; }
+    .day-cell { min-height: 70px; padding: 4px; }
+    .event-chip { font-size: 9px; padding: 1px 4px; }
+    .legend { padding: 0 16px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img class="arr-logo" src="https://images.squarespace-cdn.com/content/v1/62eed40e70714261bb4b9410/0db0f7b4-9dc0-4924-baf9-265aa29e468b/AustinRidgeRiders-Logo-RGB_FullLockup-White.png?format=500w" alt="Austin Ridge Riders Mountain Bike Club">
+  </div>
+  <button class="btn-download-all" onclick="downloadAllICS()">
+    &#8675; Download All Events (.ics)
+  </button>
+</header>
+
+<div class="controls">
+  <div class="filters">
+    <button class="filter-btn active" data-cat="all" onclick="setFilter('all', this)">All Events</button>
+    <button class="filter-btn" data-cat="sunday" onclick="setFilter('sunday', this)">&#x1F6B4; Sunday Ride</button>
+    <button class="filter-btn" data-cat="monthly" onclick="setFilter('monthly', this)">&#x1F4C5; Monthly Ride</button>
+    <button class="filter-btn" data-cat="advanced" onclick="setFilter('advanced', this)">◆◆ Advanced Ride</button>
+    <button class="filter-btn" data-cat="rlag" onclick="setFilter('rlag', this)">&#x1F338; RLAG</button>
+    <button class="filter-btn" data-cat="clinic" onclick="setFilter('clinic', this)">&#x1F3AB; Skills Clinic</button>
+    <button class="filter-btn" data-cat="special" onclick="setFilter('special', this)">&#x2B50; Special Event</button>
+    <button class="filter-btn" data-cat="trailcrew" onclick="setFilter('trailcrew', this)">&#x1F6E0; Trail Crew</button>
+  </div>
+  <div class="nav">
+    <button onclick="changeMonth(-1)">&#8249;</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button onclick="changeMonth(1)">&#8250;</button>
+  </div>
+</div>
+
+<div class="calendar-wrap">
+  <div class="day-headers">
+    <div class="day-header">Sun</div>
+    <div class="day-header">Mon</div>
+    <div class="day-header">Tue</div>
+    <div class="day-header">Wed</div>
+    <div class="day-header">Thu</div>
+    <div class="day-header">Fri</div>
+    <div class="day-header">Sat</div>
+  </div>
+  <div class="calendar-grid" id="calendarGrid"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--sunday)"></div>Sunday Ride</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--monthly)"></div>Monthly Ride</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--advanced)"></div>◆◆ Advanced Ride</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--rlag)"></div>RLAG</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--clinic)"></div>Skills Clinic</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--special)"></div>Special Event</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--trailcrew)"></div>Trail Crew</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-cat-badge" id="modalBadge"></div>
+        <div class="modal-title" id="modalTitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalContent"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Data sourced from <a href="https://www.austinridgeriders.com/events" target="_blank">austinridgeriders.com/events</a>.
+  RSVP required for most events. Dates subject to change — always check the official site.
+</footer>
+
+<script>
+// ─── Event Data ───────────────────────────────────────────────────────────────
+const CATEGORIES = {
+  sunday:   { label: 'Sunday Ride',   color: '#1d4ed8', icon: '🚴' },
+  monthly:  { label: 'Monthly Ride',  color: '#0ea5e9', icon: '📅' },
+  advanced: { label: 'Advanced Ride', color: '#111827', icon: '◆◆' },
+  rlag:     { label: 'RLAG',          color: '#dc2626', icon: '🌸' },
+  clinic:   { label: 'Skills Clinic', color: '#0891b2', icon: '🎓' },
+  special:  { label: 'Special Event', color: '#d97706', icon: '⭐' },
+  trailcrew:{ label: 'Trail Crew',    color: '#16a34a', icon: '🛠' },
+};
+
+let events = [];
+let eid = 1;
+function addEvent(date, title, location, time, endTime, cat, desc, url) {
+  events.push({ id: eid++, date, title, location, time: time||'9:00 AM', endTime: endTime||null, category: cat, description: desc||'', registrationUrl: url||null });
+}
+
+// ── Sunday Rides 2026 (no-drop, all levels) ───────────────────────────────────
+const sundayDesc = 'No-drop group ride — all levels welcome! RSVP to receive details and updates on any changes or cancellations.';
+// May
+addEvent('2026-05-10','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc,'https://www.austinridgeriders.com/events');
+addEvent('2026-05-17','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-05-24','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-05-31','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+// June
+addEvent('2026-06-07','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-06-14','Sunday Ride','Brushy Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-06-21','Sunday Ride','Brushy Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-06-28','Sunday Ride','Brushy Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+// July
+addEvent('2026-07-05','Sunday Ride','South Walnut Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-07-12','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-07-19','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-07-26','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+// August
+addEvent('2026-08-02','Sunday Ride','Mary Moore Searight','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-08-09','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-08-16','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-08-23','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-08-30','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+// September
+addEvent('2026-09-06','Sunday Ride','South Walnut Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-09-13','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-09-20','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-09-27','Sunday Ride','Walnut Creek Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+// October
+addEvent('2026-10-04','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-10-11','Sunday Ride','Brushy Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-10-18','Sunday Ride','Brushy Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-10-25','Sunday Ride','Brushy Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+// November
+addEvent('2026-11-01','Sunday Ride','South Walnut Creek','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-11-08','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-11-15','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-11-22','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-11-29','Sunday Ride','GTX Trails','9:00 AM','11:00 AM','sunday',sundayDesc);
+// December
+addEvent('2026-12-06','Sunday Ride','Mary Moore Searight','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-12-13','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-12-20','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+addEvent('2026-12-27','Sunday Ride','Circle C Metro Park','9:00 AM','11:00 AM','sunday',sundayDesc);
+
+// ── Monthly Rides 2026 (3rd Saturday, all levels, food after) ─────────────────
+const monthlyDesc = 'No-drop group ride for all skill levels. Food and refreshments provided after the ride. Registration required — space is limited.';
+addEvent('2026-05-30','Monthly Group Ride','TBD – Member Appreciation','9:00 AM','1:00 PM','monthly',monthlyDesc);
+addEvent('2026-06-27','Monthly Group Ride','Spider Mountain','9:00 AM','1:00 PM','monthly',monthlyDesc,'https://www.tickettailor.com/events/austinridgeriders/2004754');
+addEvent('2026-07-25','Monthly Group Ride','Forrest Creek','9:00 AM','1:00 PM','monthly',monthlyDesc,'https://www.tickettailor.com/events/austinridgeriders/2000635');
+addEvent('2026-08-22','Monthly Group Ride','Pedernales Falls','9:00 AM','1:00 PM','monthly',monthlyDesc,'https://www.tickettailor.com/events/austinridgeriders/2004746');
+addEvent('2026-09-26','Monthly Group Ride','Muleshoe Bend','9:00 AM','1:00 PM','monthly',monthlyDesc,'https://www.tickettailor.com/events/austinridgeriders/2004736');
+addEvent('2026-10-24','Monthly Group Ride','Reveille Peak','9:00 AM','1:00 PM','monthly',monthlyDesc,'https://app.tickettailor.com/events/austinridgeriders/2037889');
+
+// ── Advanced Rides 2026 (3rd Thursday, experts only) ─────────────────────────
+const advDesc = 'For experienced riders only — expect significant elevation, switchbacks, technical climbing, and flowy descents. This is not a beginner ride. Registration required.';
+addEvent('2026-05-16','Advanced Group Ride','Goodwater Loop','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000622');
+addEvent('2026-06-20','Advanced Group Ride','Emma Long MTB Park','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000631');
+addEvent('2026-07-18','Advanced Group Ride','Barton Creek Greenbelt','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000633');
+addEvent('2026-08-15','Advanced Group Ride','Mount Lakeway','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000627');
+addEvent('2026-09-19','Advanced Group Ride','Emma Long MTB Park','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000631');
+addEvent('2026-10-17','Advanced Group Ride','Barton Creek Greenbelt','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000633');
+addEvent('2026-11-21','Advanced Group Ride','Goodwater Loop','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000622');
+addEvent('2026-12-19','Advanced Group Ride','Mount Lakeway','7:00 AM','12:00 PM','advanced',advDesc,'https://www.tickettailor.com/events/austinridgeriders/2000627');
+
+// ── RLAG – Ride Like A Girl (June–September) ──────────────────────────────────
+const rlagDesc = 'Ride Like A Girl — a welcoming space for women and non-binary riders to build skills and confidence on the trails. Monday evening rides start at 6 PM. Weekend sessions start at 9 AM.';
+const rlagUrl = 'https://app.tickettailor.com/events/austinridgeriders/2161209';
+// June Mondays
+addEvent('2026-06-01','RLAG Monday Ride','Walnut Creek Metro Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-06-08','RLAG Monday Ride','Maxwell Trail','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-06-15','RLAG Monday Ride','Brushy Creek','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-06-22','RLAG Monday Ride','Emma Long MTB Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-06-29','RLAG Monday Ride','Circle C Metro Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+// June weekend
+addEvent('2026-06-13','RLAG Weekend Ride','Georgetown Trails','9:00 AM','12:00 PM','rlag',rlagDesc,rlagUrl);
+// July Mondays
+addEvent('2026-07-06','RLAG Monday Ride','Walnut Creek Metro Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-07-13','RLAG Monday Ride','Maxwell Trail','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-07-20','RLAG Monday Ride','Brushy Creek','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-07-27','RLAG Monday Ride','Emma Long MTB Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+// July weekend
+addEvent('2026-07-11','RLAG Weekend Ride','Muleshoe Bend','9:00 AM','12:00 PM','rlag',rlagDesc,rlagUrl);
+// August Mondays
+addEvent('2026-08-03','RLAG Monday Ride','Walnut Creek Metro Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-08-10','RLAG Monday Ride','Maxwell Trail','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-08-17','RLAG Monday Ride','Brushy Creek','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-08-24','RLAG Monday Ride','Circle C Metro Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-08-31','RLAG Monday Ride','Georgetown Trails','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+// August weekend
+addEvent('2026-08-08','RLAG Weekend Ride','Emma Long MTB Park','9:00 AM','12:00 PM','rlag',rlagDesc,rlagUrl);
+// September Mondays
+addEvent('2026-09-07','RLAG Monday Ride','Walnut Creek Metro Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-09-14','RLAG Monday Ride','Maxwell Trail','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-09-21','RLAG Monday Ride','Brushy Creek','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+addEvent('2026-09-28','RLAG Monday Ride','Emma Long MTB Park','6:00 PM','8:00 PM','rlag',rlagDesc,rlagUrl);
+// September weekend
+addEvent('2026-09-12','RLAG Weekend Ride','Georgetown Trails','9:00 AM','12:00 PM','rlag',rlagDesc,rlagUrl);
+
+// ── Skills Clinics ────────────────────────────────────────────────────────────
+const clinicDesc = 'Level 1 Fundamentals Clinic — two-day intensive instruction at Walnut Creek Metro Park. Curriculum: neutral body position, bike/body separation, braking, cornering, gearing, and more. $150 members / $250 non-members.';
+const clinicUrl = 'https://www.bikereg.com/arr-l1-clinic';
+addEvent('2026-06-13','Skills Clinic – Day 1','Walnut Creek Metro Park','8:00 AM','5:00 PM','clinic',clinicDesc,clinicUrl);
+addEvent('2026-06-14','Skills Clinic – Day 2','Walnut Creek Metro Park','8:00 AM','5:00 PM','clinic',clinicDesc,clinicUrl);
+addEvent('2026-09-12','Skills Clinic – Day 1','Walnut Creek Metro Park','8:00 AM','5:00 PM','clinic',clinicDesc,clinicUrl);
+addEvent('2026-09-13','Skills Clinic – Day 2','Walnut Creek Metro Park','8:00 AM','5:00 PM','clinic',clinicDesc,clinicUrl);
+
+// ── Special Events ────────────────────────────────────────────────────────────
+addEvent('2026-02-07','Cranksgiving 2026','Pace Bend Park, Spicewood TX','9:00 AM','4:00 PM','special',"ARR's largest fundraising event of the year! Multi-lap racing format — earn raffle tickets for every lap completed. Fun for all levels.",'https://www.austinridgeriders.com/events/cranksgiving');
+addEvent('2026-07-29','ARR Movie Night','Austin TX (TBA)','7:00 PM','10:00 PM','special','Annual ARR Movie Night. Tickets available June 2026. Stay tuned for venue details.','https://www.austinridgeriders.com/events');
+addEvent('2026-05-30','Member Appreciation Ride & Party','TBD','9:00 AM','2:00 PM','special','ARR Member Appreciation event — food, activities, and a group ride for current members. Invitations distributed via email to current members.','https://www.austinridgeriders.com/events');
+addEvent('2025-10-06','Freehub Film Festival','AFS Cinema, Austin TX','6:00 PM','8:30 PM','special','2025 Freehub PRESENTS Mountain Bike Film Festival, benefitting Austin Ridge Riders. An evening of stunning mtb films.','https://www.austinridgeriders.com/events/freehub-presents');
+
+// ── Trail Crew Workdays ───────────────────────────────────────────────────────
+const trailDesc = 'Volunteer trail maintenance and building workday. Help keep Austin trails amazing! All skill levels welcome — just bring gloves and water. Register via BuyTickets.';
+const trailUrl = 'https://buytickets.at/arrtrailcrew';
+addEvent('2026-06-20','Trail Crew Workday','Walnut Creek Metro Park','7:30 AM','12:00 PM','trailcrew',trailDesc,trailUrl);
+addEvent('2026-07-11','Trail Crew Workday','Brushy Creek','7:30 AM','12:00 PM','trailcrew',trailDesc,trailUrl);
+addEvent('2026-08-08','Trail Crew Workday','Walnut Creek Metro Park','7:30 AM','12:00 PM','trailcrew',trailDesc,trailUrl);
+addEvent('2026-09-05','Trail Crew Workday','Brushy Creek','7:30 AM','12:00 PM','trailcrew',trailDesc,trailUrl);
+addEvent('2026-10-03','Trail Crew Workday','Walnut Creek Metro Park','7:30 AM','12:00 PM','trailcrew',trailDesc,trailUrl);
+addEvent('2026-11-07','Trail Crew Workday','Brushy Creek','7:30 AM','12:00 PM','trailcrew',trailDesc,trailUrl);
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const today = new Date();
+let currentYear = today.getFullYear();
+let currentMonth = today.getMonth(); // 0-indexed
+let activeFilter = 'all';
+let activeModal = null;
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCalendar();
+}
+
+function filteredEvents() {
+  if (activeFilter === 'all') return events;
+  return events.filter(e => e.category === activeFilter);
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function eventsForDate(dateStr) {
+  return filteredEvents().filter(e => e.date === dateStr);
+}
+
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // Leading cells from previous month
+  for (let i = 0; i < firstDay; i++) {
+    const d = daysInPrevMonth - firstDay + 1 + i;
+    const prevMonth = currentMonth === 0 ? 12 : currentMonth;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const dateStr = `${prevYear}-${String(prevMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    grid.appendChild(createDayCell(d, dateStr, true));
+  }
+
+  // Current month cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cell = createDayCell(d, dateStr, false);
+    if (dateStr === todayStr) cell.classList.add('today');
+    grid.appendChild(cell);
+  }
+
+  // Trailing cells
+  const totalCells = firstDay + daysInMonth;
+  const trailing = 7 - (totalCells % 7);
+  if (trailing < 7) {
+    for (let d = 1; d <= trailing; d++) {
+      const nextMonth = currentMonth === 11 ? 1 : currentMonth + 2;
+      const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+      const dateStr = `${nextYear}-${String(nextMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      grid.appendChild(createDayCell(d, dateStr, true));
+    }
+  }
+}
+
+function createDayCell(dayNum, dateStr, otherMonth) {
+  const cell = document.createElement('div');
+  cell.className = 'day-cell' + (otherMonth ? ' other-month' : '');
+
+  const numEl = document.createElement('div');
+  numEl.className = 'day-num';
+  numEl.textContent = dayNum;
+  cell.appendChild(numEl);
+
+  const dayEvs = eventsForDate(dateStr);
+  const maxVisible = 3;
+
+  dayEvs.slice(0, maxVisible).forEach(ev => {
+    const chip = document.createElement('span');
+    chip.className = `event-chip cat-${ev.category}`;
+    chip.textContent = ev.title;
+    chip.title = ev.title;
+    chip.onclick = (e) => { e.stopPropagation(); openEventModal(ev); };
+    cell.appendChild(chip);
+  });
+
+  if (dayEvs.length > maxVisible) {
+    const more = document.createElement('div');
+    more.className = 'more-link';
+    more.textContent = `+${dayEvs.length - maxVisible} more`;
+    more.onclick = (e) => { e.stopPropagation(); openDayModal(dateStr, dayEvs); };
+    cell.appendChild(more);
+  }
+
+  return cell;
+}
+
+// ─── Modals ───────────────────────────────────────────────────────────────────
+function openEventModal(ev) {
+  const cat = CATEGORIES[ev.category];
+  const badge = document.getElementById('modalBadge');
+  badge.textContent = `${cat.icon} ${cat.label}`;
+  badge.style.background = cat.color;
+  document.getElementById('modalTitle').textContent = ev.title;
+
+  const d = new Date(ev.date + 'T12:00:00');
+  const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  let html = `
+    <div class="modal-row"><span class="modal-icon">📅</span><span class="modal-label">Date</span><span class="modal-val">${dateStr}</span></div>
+    <div class="modal-row"><span class="modal-icon">🕐</span><span class="modal-label">Time</span><span class="modal-val">${ev.time}${ev.endTime ? ' – ' + ev.endTime : ''}</span></div>
+    <div class="modal-row"><span class="modal-icon">📍</span><span class="modal-label">Location</span><span class="modal-val">${ev.location}</span></div>
+    <p class="modal-desc">${ev.description}</p>
+    <div class="modal-actions">
+      <button class="btn-ics" onclick="downloadSingleICS(${ev.id})">&#8675; Add to Calendar (.ics)</button>
+      ${ev.registrationUrl ? `<a class="btn-register" href="${ev.registrationUrl}" target="_blank">Register &#8599;</a>` : ''}
+    </div>
+  `;
+  document.getElementById('modalContent').innerHTML = html;
+  activeModal = ev;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function openDayModal(dateStr, dayEvs) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  document.getElementById('modalBadge').textContent = '📅 Events';
+  document.getElementById('modalBadge').style.background = '#1e293b';
+  document.getElementById('modalTitle').textContent = dateLabel;
+
+  let html = '<ul class="day-event-list">';
+  dayEvs.forEach(ev => {
+    const cat = CATEGORIES[ev.category];
+    html += `
+      <li class="day-event-item" onclick="openEventModal(window.__arr_events[${ev.id}])">
+        <div class="day-event-dot" style="background:${cat.color}"></div>
+        <div class="day-event-info">
+          <div class="title">${cat.icon} ${ev.title}</div>
+          <div class="sub">${ev.location} · ${ev.time}</div>
+        </div>
+      </li>`;
+  });
+  html += '</ul>';
+  document.getElementById('modalContent').innerHTML = html;
+  activeModal = null;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  activeModal = null;
+}
+
+// Expose events by id for day modal click handler
+window.__arr_events = {};
+events.forEach(e => { window.__arr_events[e.id] = e; });
+
+// ─── ICS Generation ───────────────────────────────────────────────────────────
+function parseTime(dateStr, timeStr) {
+  if (!timeStr) return dateStr.replace(/-/g,'') + 'T090000';
+  const d = dateStr.replace(/-/g,'');
+  const m = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return d + 'T090000';
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const period = m[3].toUpperCase();
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${d}T${String(h).padStart(2,'0')}${min}00`;
+}
+
+function escapeICS(str) {
+  return (str||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n').replace(/\r/g,'');
+}
+
+function buildVEVENT(ev) {
+  const cat = CATEGORIES[ev.category];
+  const uid = `arr-${ev.id}-${ev.date}@austinridgeriders.com`;
+  const dtstart = parseTime(ev.date, ev.time);
+  const dtend = parseTime(ev.date, ev.endTime || ev.time);
+  const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  const summary = `${cat.icon} ${ev.title} – ${ev.location}`;
+  const desc = `Category: ${cat.label}\\nTime: ${ev.time}${ev.endTime ? ' – ' + ev.endTime : ''}\\n\\n${ev.description}${ev.registrationUrl ? '\\n\\nRegister: ' + ev.registrationUrl : ''}`;
+  return [
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${now}`,
+    `DTSTART:${dtstart}`,
+    `DTEND:${dtend}`,
+    `SUMMARY:${escapeICS(summary)}`,
+    `DESCRIPTION:${escapeICS(desc)}`,
+    `LOCATION:${escapeICS(ev.location)}`,
+    `CATEGORIES:${escapeICS(cat.label)}`,
+    'END:VEVENT'
+  ].join('\r\n');
+}
+
+function buildICSFile(evList, calName) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Austin Ridge Riders//Event Calendar 2026//EN',
+    `X-WR-CALNAME:${escapeICS(calName)}`,
+    'X-WR-TIMEZONE:America/Chicago',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+  evList.forEach(ev => lines.push(buildVEVENT(ev)));
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function downloadICS(content, filename) {
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadSingleICS(evId) {
+  const ev = window.__arr_events[evId];
+  if (!ev) return;
+  const content = buildICSFile([ev], `ARR – ${ev.title}`);
+  const slug = ev.title.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase();
+  downloadICS(content, `arr-${ev.date}-${slug}.ics`);
+}
+
+function downloadAllICS() {
+  const content = buildICSFile(filteredEvents(), 'Austin Ridge Riders – 2026 Events');
+  const label = activeFilter === 'all' ? 'all' : activeFilter;
+  downloadICS(content, `arr-2026-events-${label}.ics`);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+// Start on current month but ensure at least June 2026
+if (currentYear < 2026 || (currentYear === 2026 && currentMonth < 5)) {
+  currentYear = 2026; currentMonth = 5;
+}
+renderCalendar();
+
+// Keyboard close
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
+</script>
+</body>
+</html>
